@@ -1,2 +1,2 @@
 # Content-Workflow
-Manages content assigning ask for writers
+Manages content assigning task for writers
