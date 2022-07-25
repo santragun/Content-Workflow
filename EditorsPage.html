@@ -1,0 +1,189 @@
+<script>
+  function unassignedTopics(topics){
+    loader.style.display = 'none';
+    var nav = $('#nav-bar');
+    var list = $('#top-nav');
+    list.empty();
+    console.log(nav);
+    var editorBtn = $("#editorView");
+    
+    if(editorBtn.length == 0){
+      editorBtn = document.createElement('button');
+      editorBtn.textContent = "Switch to Writer View";
+      editorBtn.className = "w3-bar-item w3-button w3-light-gray";
+      editorBtn.setAttribute("id","editorView");
+      editorBtn.setAttribute("class","editorsbtn");
+      nav.append(editorBtn);
+       editorBtn.onclick = function(){
+        loader.style.display = '';
+        editorView()} 
+    }
+    else{
+      editorBtn.text('Switch to Writer View');
+      editorBtn.attr('onclick', 'loader.style.display = ""; editorView()');
+    }
+     
+    
+    var completedBtn = document.createElement('button');
+    completedBtn.textContent = "Completed";
+    completedBtn.className = "w3-button w3-border w3-right w3-bar-item w3-blue";
+    completedBtn.onclick = function(){
+      loader.style.display = '';
+      google.script.run.withSuccessHandler(editorsTopics)
+      .retrieveTopics('completed')}; 
+
+    var inProgressBtn = document.createElement('button');
+    inProgressBtn.textContent = "In Progress";
+    inProgressBtn.className = "w3-button w3-border w3-right w3-bar-item w3-blue";
+    inProgressBtn.onclick = function(){
+      loader.style.display = '';
+      google.script.run.withSuccessHandler(editorsTopics).retrieveTopics('progress')}; 
+  
+    var inReviewBtn = document.createElement('button');
+    inReviewBtn.textContent = "In Review";
+    inReviewBtn.className = "w3-button w3-border w3-right w3-bar-item w3-blue";
+    inReviewBtn.onclick = function(){
+      loader.style.display = '';
+      google.script.run.withSuccessHandler(editorsTopics).retrieveTopics('review')}; 
+
+    var homeBtn = document.createElement('button');
+    homeBtn.textContent = "Unassigned";
+    homeBtn.className = "w3-button w3-border w3-right w3-bar-item w3-blue";
+    homeBtn.onclick = function(){
+      loader.style.display = '';
+      google.script.run.withSuccessHandler(unassignedTopics).getTopics()}; 
+    
+    list.append(completedBtn);
+    list.append(inReviewBtn);  
+    list.append(inProgressBtn);
+    list.append(homeBtn);
+    
+
+    topics.pop();
+    topics.push('unassignedEditor');
+    showTopics(topics);
+  }
+
+  function editorsTopics(topics){
+    loader.style.display = 'none';
+    var type = topics.pop();
+    if(type == 'reviewNew'){
+      let message = '<b><i class="fa-solid fa-check icon-success"></i> Topic move to review successfully!</b>';
+      type = 'review';
+        dialog("Confirmation", message);
+    }
+    if(type == 'completedNew'){
+      let message = '<b><i class="fa-solid fa-check icon-success"></i> Topic marked as completed successfully!</b>';
+      type = 'completed';
+        dialog("Confirmation", message);
+    }
+      
+    var list = $('#topics');
+    list.empty();
+    if(topics == null || topics.length == 0){
+    var message = '<b><i class="fa fa-exclamation-circle"></i> There are no topics to show!</b>';
+      list.append('<p style="margin-left: 3%;">' + message + '</p>');
+      list.append('<br>');
+    }
+    else{
+    for (let i = 0; i < topics.length; i++) {
+      let html = '<div class="w3-row"><div class="w3-col l9 m9" style="padding-left: 10%;">';
+      html += '<h3 style="padding-left: 4%;">';
+      html += topics[i][1];   //POST TITLE
+      html += '</h3>';
+      html += '<p>ID: <span class="w3-opacity">';
+      html += topics[i][0];   // ID
+      html += '</span><br>';
+      html += 'Required Word Count: <span class="w3-opacity">';
+      html += topics[i][2];   // WORD COUNT
+      html += '</span><br>';
+  
+      if(type == 'progress' || type == 'review'){
+        html += 'Primary Query: <span class="w3-opacity">';
+        html += topics[i][3];   // PRIMARY QUERY
+        html += '</span><br>';
+        html += 'Related Query: <span class="w3-opacity">';
+        html += topics[i][4];   // Related QUERY
+        html += '</span><br>';
+        html += 'Start date: <span class="w3-opacity">';
+        html += topics[i][6];   // START DATE
+        html += '</span></br>';
+        html += 'Due date: <span class="w3-opacity">';
+        html += topics[i][5];   // Due date
+        html += '</span></br>';
+        html += 'Writer: <span class="w3-opacity">';
+        html += topics[i][7];   // Writer
+
+        if(type == 'progress'){
+          $("#page").text("In Progress");
+          let id_name = "review_" + i;
+          html += '</div><div class="w3-col l2 m3" style="padding-top: 10%; padding-left: 3%;"><p class="w3-left"><button id=' + id_name + ' class="w3-button w3-border" style="background-color: #4BB543!important; border-radius: 5px;"><b><i class="fa fa-check"></i> Move to in review</b></button></p></div></div>';
+          list.append(html);
+          let reviewBtn = document.getElementById(id_name);
+          reviewBtn.onclick = function(){
+            google.script.run.withSuccessHandler(
+            function() {
+              google.script.run.withSuccessHandler(editorsTopics)
+                  .retrieveTopics('reviewNew');
+            }).moveToReview(topics[i][0]);
+          };   
+        }
+        else if(type == 'review'){
+          $("#page").text("In Review");
+          let id_name = "mark_" + i;
+          html += '</div><div class="w3-col l2 m3" style="padding-top: 10%; padding-left: 3%;"><p class="w3-left"><button id=' + id_name + ' class="w3-button w3-border" style="background-color: #4BB543!important; border-radius: 5px;"><b><i class="fa fa-check"></i> Mark as completed</b></button></p></div></div>';
+          list.append(html);
+          let markBtn = document.getElementById(id_name);
+          markBtn.onclick = function(){
+            google.script.run.withSuccessHandler(
+            function() {
+              loader.style.display = '';
+              google.script.run.withSuccessHandler(editorsTopics)
+                  .retrieveTopics('completedNew');
+            }).markAsCompleted(topics[i][0]);
+          };    
+        }
+    }
+    else{
+      $("#page").text("Completed");
+      html += 'Final word count: <span class="w3-opacity">';
+      html += topics[i][3];   // final word count
+      html += '</span><br>';
+      html += 'Primary Query: <span class="w3-opacity">';
+      html += topics[i][4];   // PRIMARY QUERY
+      html += '</span><br>';
+      html += 'Related Query: <span class="w3-opacity">';
+      html += topics[i][5];   // RELATED QUERY
+      html += '</span><br>';
+      html += 'Start date: <span class="w3-opacity">';
+      html += topics[i][7];   // START DATE
+      html += '</span></br>';
+      html += 'Due date: <span class="w3-opacity">';
+      html += topics[i][6];   // Due date
+      html += '</span></br>';
+      html += 'Completion Date: <span class="w3-opacity">';
+      html += topics[i][8];  
+      html += '</span></br>';
+      html += 'Writer: <span class="w3-opacity">';
+      html += topics[i][9];   // Writer
+      list.append(html);
+    }
+    list.append('<hr>');
+  }
+  }
+  }
+  function editorView(){
+    $("#editorView").text('Switch to Editor View');
+    $("#editorView").attr('onclick', 'loader.style.display = "";google.script.run.withSuccessHandler(unassignedTopics).getTopics()');
+    var list = $('#top-nav');
+    list.empty();
+    var btn = document.createElement('button');
+    btn.textContent = "My Topics";
+    btn.className = "w3-button w3-border w3-right w3-bar-item";
+    btn.setAttribute("id","top-right");
+    
+    list.append(btn);
+    google.script.run.withSuccessHandler(showTopics)
+      .getTopics();
+  }
+</script>
